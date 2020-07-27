@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  S3BucketName:
+    Description: >-
+      S3 bucket to store the xml file for the RSS feed.
+    Type: String
+    MinLength: '3'
+    MaxLength: '63'
+
+Resources:
+
+  RSSBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref S3BucketName
+      AccessControl: PublicRead
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      PolicyDocument:
+        Id: MyPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref RSSBucket
+                - /oth/rss.xml
+      Bucket: !Ref RSSBucket
+
+  LambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: lambda-rss-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  LambdaInlinePolicyForS3:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: lambda-access-s3
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowPutForAllObjects
+            Effect: Allow
+            Action:
+              - 's3:PutObject'
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref RSSBucket
+                - /*
+          - Sid: AllowGetCode
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource: arn:aws:s3:::website-to-rss-lambda/source.zip
+      Roles:
+        - Ref: LambdaRole
+
+  WebsiteToRSSFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Read website and update RSS feed
+      FunctionName: website-to-rss-function
+      Handler: website_to_rss.lambda_handler
+      MemorySize: 128
+      Role:
+        Fn::GetAtt: 
+              - "LambdaRole"
+              - "Arn"
+      Runtime: python3.8
+      Timeout: 5
+      Code:
+        S3Bucket: website-to-rss-lambda
+        S3Key: source.zip
+
+  TriggerLambdaRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Trigger the lambda function every 10 min to update the RSS feed
+      ScheduleExpression: "rate(10 minutes)"
+      State: ENABLED
+      Targets:
+      - 
+        Arn: 
+          Fn::GetAtt: 
+            - "WebsiteToRSSFunction"
+            - "Arn"
+        Id: id1
+
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Ref: "WebsiteToRSSFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "TriggerLambdaRule"
+          - "Arn"
