@@ -1,0 +1,4 @@
+source/*/*
+source/six.py
+.vscode/*
+source.zip
