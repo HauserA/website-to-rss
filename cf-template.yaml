@@ -78,10 +78,7 @@ Resources:
       FunctionName: website-to-rss-function
       Handler: website_to_rss.lambda_handler
       MemorySize: 128
-      Role:
-        Fn::GetAtt: 
-              - "LambdaRole"
-              - "Arn"
+      Role: !GetAtt "LambdaRole.Arn"
       Runtime: python3.8
       Timeout: 5
       Code:
@@ -96,10 +93,7 @@ Resources:
       State: ENABLED
       Targets:
       - 
-        Arn: 
-          Fn::GetAtt: 
-            - "WebsiteToRSSFunction"
-            - "Arn"
+        Arn: !GetAtt "WebsiteToRSSFunction.Arn"
         Id: id1
 
   PermissionForEventsToInvokeLambda: 
@@ -109,7 +103,4 @@ Resources:
         Ref: "WebsiteToRSSFunction"
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
-      SourceArn:
-        Fn::GetAtt:
-          - "TriggerLambdaRule"
-          - "Arn"
+      SourceArn: !GetAtt "TriggerLambdaRule.Arn"
