@@ -7,6 +7,14 @@ Parameters:
     MinLength: '3'
     MaxLength: '63'
 
+  XMLPath:
+    Description: >-
+      The path to the RSS xml file in the S3 Bucket.
+    Type: String
+    MinLength: '5'
+    MaxLength: '63'
+    Default: '/oth/rss.xml'
+
 Resources:
 
   RSSBucket:
@@ -30,7 +38,7 @@ Resources:
               - ''
               - - 'arn:aws:s3:::'
                 - !Ref RSSBucket
-                - /oth/rss.xml
+                - !Ref XMLPath
       Bucket: !Ref RSSBucket
 
   LambdaRole:
@@ -107,3 +115,12 @@ Resources:
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
       SourceArn: !GetAtt "TriggerLambdaRule.Arn"
+
+Outputs:
+  TargetURL:
+    Description: The URL of this RSS feed
+    Value: !Join 
+      - ''
+      - - !GetAtt RSSBucket.DomainName
+        - !Ref XMLPath
+
