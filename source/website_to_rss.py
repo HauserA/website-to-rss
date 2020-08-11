@@ -1,10 +1,10 @@
+import os
 from datetime import datetime, timedelta
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 from rfeed import Item, Feed, Guid
 import boto3
 
-S3_BUCKET = "website-to-rss-feed"
 
 URL = "https://www.oth-regensburg.de/fakultaeten/informatik-und-mathematik/schwarzes-brett.html"
 
@@ -64,8 +64,8 @@ def lambda_handler(event, context):
     with open("/tmp/rss.xml", mode="w", encoding="utf-8") as xml:
         xml.write(feed.rss())
 
-    print(f"Upload file to S3: {S3_BUCKET}")
-    response = s3_client.upload_file("/tmp/rss.xml", S3_BUCKET, "oth/rss.xml")
+    print(f"Upload file to S3: {os.environ['S3_BUCKET']}")
+    response = s3_client.upload_file("/tmp/rss.xml", os.environ['S3_BUCKET'], "oth/rss.xml")
     print(f"S3 Response: {response}")
 
     print("End lambda function")

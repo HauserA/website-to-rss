@@ -84,6 +84,9 @@ Resources:
       Code:
         S3Bucket: website-to-rss-lambda
         S3Key: source.zip
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref S3BucketName
 
   TriggerLambdaRule:
     Type: AWS::Events::Rule
