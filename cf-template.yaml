@@ -7,6 +7,14 @@ Parameters:
     MinLength: '3'
     MaxLength: '63'
 
+  S3BucketForLambda:
+    Description: >-
+      S3 bucket where to lambda function code is uploaded.
+    Type: String
+    MinLength: '3'
+    MaxLength: '63'
+    Default: 'website-to-rss-lambda'
+
   XMLPath:
     Description: >-
       The path to the RSS xml file in the S3 Bucket.
@@ -75,7 +83,11 @@ Resources:
             Effect: Allow
             Action:
               - 's3:GetObject'
-            Resource: arn:aws:s3:::website-to-rss-lambda/source.zip
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref S3BucketForLambda
+                - '/source.zip'
       Roles:
         - Ref: LambdaRole
 
@@ -90,7 +102,7 @@ Resources:
       Runtime: python3.8
       Timeout: 5
       Code:
-        S3Bucket: website-to-rss-lambda
+        S3Bucket: !Ref S3BucketForLambda
         S3Key: source.zip
       Environment:
         Variables:
